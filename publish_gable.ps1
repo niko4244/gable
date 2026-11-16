@@ -32,6 +32,17 @@ $publicFiles = @(
     "source_pin.json",
     "C3_REPOSITORY_RCL_V1.md",
     "test_public_contracts.py",
+    "test_train.py",
+    "test_hardband_public.py",
+    "HARD_BAND_DESIGN.md",
+    "hardband/__init__.py",
+    "hardband/__main__.py",
+    "hardband/build.py",
+    "hardband/calibrate.py",
+    "hardband/mutate.py",
+    "hardband/prompt.py",
+    "hardband/reward.py",
+    "hardband/sandbox.py",
     ".github/workflows/public-ci.yml"
 )
 

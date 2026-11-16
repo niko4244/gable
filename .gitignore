@@ -9,6 +9,9 @@ test_advanced_curriculum_v3.py
 test_rcl.py
 test_repo_rcl.py
 test_compare_holdouts.py
+test_hardband.py
+hardband/corpus.py
+hardband/_trusted.py
 integration_smoke.py
 repo_integration_smoke.py
 adversarial_integration_smoke.py

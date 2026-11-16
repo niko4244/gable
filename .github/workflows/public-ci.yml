@@ -15,6 +15,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile public Python sources
-        run: python -m py_compile rcl.py repo_rcl.py oracle_runner.py repo_case_runner.py compare_holdouts.py train.py
+        run: python -m compileall -q rcl.py repo_rcl.py oracle_runner.py repo_case_runner.py compare_holdouts.py train.py hardband test_hardband_public.py test_train.py
       - name: Test nonsecret CPU contracts
-        run: python -m unittest -q test_public_contracts
+        run: python -m unittest -q test_public_contracts test_hardband_public test_train

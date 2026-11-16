@@ -13,6 +13,24 @@ improvement, or independently demonstrated frontier-model parity. The sections
 below document the original V0/V2 research design and historical measurements;
 do not interpret them as a live performance report.
 
+## Hard Band research curriculum
+
+The Claude-authored **Hard Band** framework is included in `hardband/`.
+It organizes multi-file repairs into single-defect and coupled-defect families,
+requires host-replayed fail-to-pass and protected pass-to-pass checks, and
+classifies task difficulty using separately collected student/frontier attempts.
+The framework exports research-only SFT/preference candidates only from
+verified training problems. It does not itself establish that a frontier model
+failed, and its output is **not an admitted training dataset** for `train.py`.
+
+The toy reference corpus, its hidden-case generators, and corresponding private
+tests remain local rather than entering public Git history. This preserves
+benchmark integrity; see `HARD_BAND_DESIGN.md` and `PUBLIC_RELEASE.md`.
+
+No authentic Gemma checkpoint was trained as part of this integration. The
+five BF16 weight shards are absent from the inspected local caches; available
+disk capacity and free GPU memory are insufficient for this exact SFT pilot.
+
 ## Latest source verification (November 15, 2026)
 
 The expanded local V3 curriculum contains **six function tasks and six

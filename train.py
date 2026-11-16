@@ -54,7 +54,12 @@ def sft_dataset_prefix_ids(tokenizer, rendered: str, input_ids: list[int]) -> li
 
 def prove_sft_prompt_mask(input_ids: list[int], labels: list[int],
                           prompt_prefix_ids: list[int]) -> None:
-    """Require an exact user-turn token prefix with zero trainable prompt labels."""
+    """Require exactly the native assistant suffix to contribute SFT loss.
+
+    Response-only helper implementations can accidentally drop part of a long
+    assistant answer.  Checking for a nonempty target or a decoded substring
+    alone cannot detect those partial masks.
+    """
     if (
         not prompt_prefix_ids
         or len(prompt_prefix_ids) >= len(input_ids)
@@ -63,6 +68,9 @@ def prove_sft_prompt_mask(input_ids: list[int], labels: list[int],
         or any(int(label) != -100 for label in labels[:len(prompt_prefix_ids)])
         or any(int(label) not in (-100, int(input_ids[index]))
                for index, label in enumerate(labels))
+        or any(int(label) != int(input_ids[index])
+               for index, label in enumerate(labels[len(prompt_prefix_ids):],
+                                             start=len(prompt_prefix_ids)))
     ):
         raise RuntimeError("SFT user/source tokens or label IDs fail exact loss-mask invariants")
 
@@ -71,6 +79,39 @@ def prove_sft_completion_coverage(decoded_targets: str, completion: str) -> None
     """Require that all original assistant source text, not just line one, survives."""
     if not completion.strip() or completion.strip() not in decoded_targets:
         raise RuntimeError("Complete assistant code is absent from unmasked SFT targets")
+
+
+def prove_sft_collator_keeps_mask(row: dict, collated: dict) -> None:
+    """Check the actual batch labels, after TRL/Unsloth's data collator runs.
+
+    Training uses collated labels, not train_dataset labels directly. Either
+    left or right padding is acceptable if all padding loss is disabled.
+    """
+    try:
+        input_batch = collated["input_ids"]
+        label_batch = collated["labels"]
+        input_ids = list(input_batch[0].tolist() if hasattr(input_batch[0], "tolist")
+                         else input_batch[0])
+        labels = list(label_batch[0].tolist() if hasattr(label_batch[0], "tolist")
+                      else label_batch[0])
+        expected_input = list(row["input_ids"])
+        expected_labels = list(row["labels"])
+    except (KeyError, TypeError, IndexError, AttributeError) as exc:
+        raise RuntimeError("SFT collator did not return inspectable input and label tokens") from exc
+    if (len(input_batch) != 1 or len(label_batch) != 1
+            or len(input_ids) != len(labels)
+            or len(expected_input) != len(expected_labels)):
+        raise RuntimeError("SFT collator changed input/label lengths")
+    size = len(expected_input)
+    offsets = (0, len(input_ids) - size)
+    if not any(
+        offset >= 0
+        and input_ids[offset:offset + size] == expected_input
+        and labels[offset:offset + size] == expected_labels
+        and all(label == -100 for label in labels[:offset] + labels[offset + size:])
+        for offset in offsets
+    ):
+        raise RuntimeError("SFT collator altered response-only loss labels or source tokens")
 
 
 def prove_dpo_length_config(config, required_context: int) -> None:
@@ -209,11 +250,26 @@ def reference_adapter_parameters(model) -> list:
     return params
 
 
+def prove_only_lora_trainable(model, *, adapter_name: str | None = None) -> list:
+    """Reject silent backbone updates and models with no trainable LoRA policy."""
+    trainable = [(name, parameter) for name, parameter in model.named_parameters()
+                 if parameter.requires_grad]
+    if not trainable:
+        raise RuntimeError("No trainable policy LoRA parameters")
+    invalid = [name for name, _ in trainable
+               if ("lora_" not in name and "modules_to_save" not in name)
+               or (adapter_name is not None and f".{adapter_name}." not in name)]
+    if invalid:
+        raise RuntimeError(f"Non-policy or backbone parameters are trainable: {invalid[:3]}")
+    return [parameter for _, parameter in trainable]
+
+
 def prove_reference_excluded_from_optimizer(model, trainer) -> list:
     """Fail closed if the reference adapter can receive a gradient optimizer update."""
     refs = reference_adapter_parameters(model)
     for parameter in refs:
         parameter.requires_grad_(False)
+    policy = prove_only_lora_trainable(model, adapter_name="train")
     trainer.create_optimizer()
     optimizer = getattr(trainer, "optimizer", None)
     if optimizer is None:
@@ -222,6 +278,11 @@ def prove_reference_excluded_from_optimizer(model, trainer) -> list:
     for group in optimizer.param_groups:
         if any(id(parameter) in reference_ids for parameter in group["params"]):
             raise RuntimeError("Frozen DPO reference adapter entered the optimizer")
+    policy_ids = {id(parameter) for parameter in policy}
+    optimizer_ids = {id(parameter) for group in optimizer.param_groups
+                     for parameter in group["params"]}
+    if policy_ids != optimizer_ids:
+        raise RuntimeError("DPO optimizer does not exclusively update the trainable policy LoRA")
     return refs
 
 
@@ -434,6 +495,7 @@ def train(args: argparse.Namespace, audit: dict) -> None:
             finetune_attention_modules=True, finetune_mlp_modules=True,
             r=8, lora_alpha=8, lora_dropout=0, bias="none", random_state=3407,
         )
+        prove_only_lora_trainable(model)
     else:
         from peft import PeftModel
         model = PeftModel.from_pretrained(
@@ -442,6 +504,7 @@ def train(args: argparse.Namespace, audit: dict) -> None:
         model.load_adapter(str(args.sft_adapter.resolve()), adapter_name="reference", is_trainable=False)
         if "reference" not in model.peft_config or "train" not in model.peft_config:
             raise RuntimeError("A distinct frozen SFT reference policy is required for DPO")
+        model.set_adapter("train")
     rows = jsonl(args.data)
     output = str(args.output.resolve())
     if args.phase == "sft":
@@ -463,6 +526,7 @@ def train(args: argparse.Namespace, audit: dict) -> None:
         trainer = train_on_responses_only(
             trainer, instruction_part="<|turn>user\n", response_part="<|turn>model\n",
         )
+        prove_only_lora_trainable(model)
         # Insist some target tokens remain after response masking.
         for original, row in zip(rows, trainer.train_dataset, strict=True):
             labels = row.get("labels", [])
@@ -482,6 +546,7 @@ def train(args: argparse.Namespace, audit: dict) -> None:
                 raise RuntimeError("Assistant training signal too short or truncated")
             decoded = tokenizer.decode(target, skip_special_tokens=False)
             prove_sft_completion_coverage(decoded, original["completion"])
+            prove_sft_collator_keeps_mask(row, trainer.data_collator([row]))
     else:
         for row in rows:
             rendered_prompt = tokenizer.apply_chat_template(

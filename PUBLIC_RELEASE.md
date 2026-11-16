@@ -2,7 +2,8 @@
 
 Gable is the public source-code mirror of the local Gemma coding post-training
 project. It publishes the code for sandboxed candidate verification, small
-repository repair, dataset/optimizer admission, and paired evaluation.
+repository repair, Hard Band research curriculum mechanics,
+dataset/optimizer admission, and paired evaluation.
 
 ## What is deliberately private
 
@@ -12,6 +13,12 @@ containing local paths, and credential/configuration files stay outside the
 public Git history. Publishing them would contaminate the independent evaluation
 and undermine the reward verifier's test secrecy. The original local workspace
 retains them; they are not deleted or modified by publication.
+
+For Hard Band, `hardband/corpus.py`, `hardband/_trusted.py`, and
+`test_hardband.py` stay local. They include toy reference repairs,
+deterministic hidden-case construction, or private corpus-specific tests. The
+public framework is importable without these files; building a toy corpus
+requires a separately supplied, locally licensed corpus implementation.
 
 This means the public repository is a **source mirror**, not a complete,
 ready-to-execute copy of the private research environment. The public CI
