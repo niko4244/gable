@@ -1,0 +1,20 @@
+name: Gable public-source checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  source-contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile public Python sources
+        run: python -m py_compile rcl.py repo_rcl.py oracle_runner.py repo_case_runner.py compare_holdouts.py train.py
+      - name: Test nonsecret CPU contracts
+        run: python -m unittest -q test_public_contracts

@@ -1,0 +1,19 @@
+{
+  "repo": "zaakirio/gemma-4-12b-it-uncensored",
+  "revision": "5fdfef5f3aa9dd3c680a22078f2aa97b4a31c919",
+  "source": "https://huggingface.co/api/models/zaakirio/gemma-4-12b-it-uncensored?blobs=true",
+  "observed_date": "2026-11-15",
+  "files": {
+    "chat_template.jinja": {"size": 17466, "git_blob_sha1": "e61bbfe9a31db79ea1e4e557b046f895ad7899d0"},
+    "config.json": {"size": 4338, "git_blob_sha1": "5229f6fdc7f5f0ad0fa861e100e99b398e339dd7"},
+    "model-00001-of-00005.safetensors": {"size": 4961189118, "sha256": "a813e9d92a15d0958c29a9f3c98f1bf8a52b262d3234cbb06886b37c81e1fb28"},
+    "model-00002-of-00005.safetensors": {"size": 4966688198, "sha256": "353a509a438b0caa6ab7b87b306b322f4737d507b916aec3ccd9a5c2d349c905"},
+    "model-00003-of-00005.safetensors": {"size": 4884113678, "sha256": "0c84002bd209e2914cf2755ee4ecba4fbb69d79512ddb8ca3708cd4c9d26b634"},
+    "model-00004-of-00005.safetensors": {"size": 4986341908, "sha256": "e70e7ca7e0b121a9ca8e699549ab9a783ba99761511128596be5225ca79e7d6c"},
+    "model-00005-of-00005.safetensors": {"size": 4121215522, "sha256": "3c3f196dbcf89c720d0ac8a4f0bc105b8a4651d51ba774116caa13205c2c5428"},
+    "model.safetensors.index.json": {"size": 66306, "git_blob_sha1": "752efb73998ce28a90eb0a1ce0e9a1891e55ec79"},
+    "processor_config.json": {"size": 1382, "git_blob_sha1": "b889adcd78015bf5a0139438c5fb0b7067529a61"},
+    "tokenizer.json": {"size": 32169780, "sha256": "a2619fe11b50dbed06ac443c51d757b354d0b62d64baa514404d4e84e6713519"},
+    "tokenizer_config.json": {"size": 2748, "git_blob_sha1": "18faad3a1a88855ad2bf2b222feb91864d437804"}
+  }
+}
