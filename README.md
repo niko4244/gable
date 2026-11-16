@@ -13,6 +13,30 @@ improvement, or independently demonstrated frontier-model parity. The sections
 below document the original V0/V2 research design and historical measurements;
 do not interpret them as a live performance report.
 
+## Latest source verification (November 15, 2026)
+
+The expanded local V3 curriculum contains **six function tasks and six
+repository-repair tasks** with 102 private cases in total. It is project-authored
+CC0 test material, not an independent external coding benchmark. Public copies
+exclude the task files and reference solutions. Native Podman CPU verification
+of the complete advanced curriculum passed; the full local Python unit suite
+passed **101 tests**, as did Ruff and module compilation.
+
+Independent red-team QA exposed reward spoofing through global/function name
+resolution and default-bound unsafe builtins. Those paths now reject malicious
+candidates before container execution; complete reward replay, frozen private
+task-file hashes, rendered prompt hashes, and stricter generation metadata were
+added. A synthetic training export is explicitly refused by the training
+preflight. The public CI checks source contracts without accessing private
+holdouts or allocating model weights.
+
+The exact five-shard BF16 community Gemma checkpoint is not installed in
+inspected source locations. Free disk space and the qualified QLoRA/DPO runtime
+remain insufficient. An untouched Q6 inference model is installed, but there
+has been **no completed baseline-versus-tuned coding evaluation** or real
+post-training. Ollama model metadata is not cryptographic attestation of the
+weights that generated any historical response.
+
 **Goal:** make the user's installed, Heretic-abliterated Gemma 4 12B a much better coding model through measured post-training. The aspirational benchmark is Opus 5.5 coding quality; no equivalence is claimed. RCL here means **Reinforcement Coding Loop**: generate multiple candidate solutions, run executable checks, save verified trajectories, perform SFT and preference optimization, and measure on unseen problems.
 
 ## Starting checkpoint (observed November 15, 2026)
